@@ -1,48 +1,50 @@
-"""
-Routes: home page and episode search.
+from __future__ import annotations
 
-To enable AI chat, set USE_LLM = True below. See llm_routes.py for LLM specific routes.
-"""
-import json
-from flask import render_template, request
-from models import db, Episode, Review
+from flask import jsonify, render_template, request
 
-# ── AI toggle ──
-USE_LLM = False
-# USE_LLM = True
-# ───────────────
-
-
-def json_search(query):
-    if not query or not query.strip():
-        query = "Kardashian"
-    results = db.session.query(Episode, Review).join(
-        Review, Episode.id == Review.id
-    ).filter(
-        Episode.title.ilike(f'%{query}%')
-    ).all()
-    matches = []
-    for episode, review in results:
-        matches.append({
-            'title': episode.title,
-            'descr': episode.descr,
-            'imdb_rating': review.imdb_rating
-        })
-    return json.dumps(matches)
+from flavor_engine import engine
+from models import Feedback, db
 
 
 def register_routes(app):
-    @app.route("/")
+    @app.route('/')
     def home():
-        if USE_LLM:
-            return render_template('chat.html')
         return render_template('base.html')
 
-    @app.route("/episodes")
-    def episodes_search():
-        text = request.args.get("title", "")
-        return json_search(text)
+    @app.route('/api/overview')
+    def overview():
+        return jsonify(engine.get_overview())
 
-    if USE_LLM:
-        from llm_routes import register_chat_route
-        register_chat_route(app, json_search)
+    @app.route('/api/substitutions')
+    def substitutions():
+        seed = request.args.get('seed', 'Strawberry')
+        category = request.args.get('category')
+        compatibility = request.args.get('compatibility')
+        allergen = request.args.get('exclude_allergen')
+        try:
+            return jsonify(engine.search_substitutions(seed, category, compatibility, allergen))
+        except KeyError:
+            return jsonify({'error': f'Unknown ingredient: {seed}'}), 404
+
+    @app.route('/api/network')
+    def network():
+        return jsonify(engine.get_network())
+
+    @app.route('/api/sensory-map')
+    def sensory_map():
+        return jsonify(engine.get_sensory_map())
+
+    @app.route('/api/chat', methods=['POST'])
+    def chat():
+        payload = request.get_json(silent=True) or {}
+        question = payload.get('question', '')
+        return jsonify(engine.answer_question(question))
+
+    @app.route('/api/feedback', methods=['POST'])
+    def feedback():
+        payload = request.get_json(silent=True) or {}
+        item = Feedback(question=payload.get('question', ''), score=int(payload.get('score', 0)))
+        db.session.add(item)
+        db.session.commit()
+        average = db.session.query(db.func.avg(Feedback.score)).scalar() or 0
+        return jsonify({'average_feedback': round(float(average), 2)})

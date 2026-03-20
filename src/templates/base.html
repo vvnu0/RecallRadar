@@ -1,48 +1,232 @@
 <!doctype html>
-<title>Kardashian Search</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Kanit&family=Montserrat&family=Open+Sans:wght@500&display=swap" rel="stylesheet">
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FlavorMatrix</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
 <body>
-    <div class="full-body-container">
-        <div class="top-text">
-            <div class="google-colors">
-                <h1 id="google-4">4</h1>
-                <h1 id="google-3">3</h1>
-                <h1 id="google-0-1">0</h1>
-                <h1 id="google-0-2">0</h1>
-            </div>
-            <div class="input-box" onclick="sendFocus()">
-                <img src="{{ url_for('static', filename='images/mag.png') }}" />
-                <input placeholder="Search for a Keeping up with the Kardashians episode" id="filter-text-val" onkeyup="filterText()">
-            </div>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div>
+        <p class="eyebrow">Molecular gastronomy retrieval dashboard</p>
+        <h1>FlavorMatrix</h1>
+        <p class="lede">Explore ingredient substitutions, PMI flavor associations, latent sensory axes, and a grounded AI flavor chemist using a Flask-deployable dashboard.</p>
+      </div>
+      <div class="panel controls">
+        <label>Seed ingredient
+          <select id="seed"></select>
+        </label>
+        <label>Category filter
+          <select id="category"><option>All</option></select>
+        </label>
+        <label>Compatibility level
+          <select id="compatibility"><option>All</option></select>
+        </label>
+        <label>Exclude allergen
+          <input id="allergen" placeholder="soy, dairy, nuts">
+        </label>
+        <button id="refresh">Run retrieval</button>
+      </div>
+      <div class="panel metrics">
+        <h3>Monitoring</h3>
+        <div class="metric-row"><span>Precision@3</span><strong id="precision">-</strong></div>
+        <div class="metric-row"><span>Average feedback</span><strong id="feedbackAvg">-</strong></div>
+        <div class="metric-row"><span>Ingredients</span><strong id="ingredientCount">-</strong></div>
+        <div class="metric-row"><span>Molecules</span><strong id="moleculeCount">-</strong></div>
+      </div>
+      <div class="panel dataset-panel">
+        <h3>Bundled sources</h3>
+        <ul id="datasetNotes"></ul>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section class="hero panel">
+        <div>
+          <p class="eyebrow">Interactive views</p>
+          <h2>Seed-to-semantic culinary exploration</h2>
         </div>
-        <div id="answer-box"></div>
-    </div>
+        <div class="tabs">
+          <button class="tab active" data-target="substitution-view">Substitution Engine</button>
+          <button class="tab" data-target="network-view">Flavor Universe</button>
+          <button class="tab" data-target="sensory-view">Sensory Map</button>
+        </div>
+      </section>
 
-    <script>
-        function answerBoxTemplate(title, titleDesc, rating) {
-            return `<div>
-                <h3 class='episode-title'>${title}</h3>
-                <p class='episode-desc'>${titleDesc}</p>
-                <p class='episode-rating'>IMDB Rating: ${rating}</p>
-            </div>`;
-        }
+      <section id="substitution-view" class="view-grid active-view">
+        <div class="panel card-list-panel">
+          <h3>Ranked molecular substitutes</h3>
+          <div id="seedMeta" class="seed-meta"></div>
+          <div id="substitutionCards" class="card-list"></div>
+        </div>
+        <div class="panel">
+          <h3>Inverted index preview</h3>
+          <pre id="indexPreview"></pre>
+        </div>
+      </section>
 
-        function sendFocus() {
-            document.getElementById('filter-text-val').focus();
-        }
+      <section id="network-view" class="view-grid hidden-view">
+        <div class="panel wide-panel">
+          <h3>PMI flavor network</h3>
+          <div id="networkPlot" class="plot"></div>
+        </div>
+      </section>
 
-        function filterText() {
-            document.getElementById("answer-box").innerHTML = "";
-            fetch("/episodes?" + new URLSearchParams({ title: document.getElementById("filter-text-val").value }).toString())
-                .then((response) => response.json())
-                .then((data) => data.forEach(row => {
-                    let tempDiv = document.createElement("div");
-                    tempDiv.innerHTML = answerBoxTemplate(row.title, row.descr, row.imdb_rating);
-                    document.getElementById("answer-box").appendChild(tempDiv);
-                }));
-        }
-    </script>
+      <section id="sensory-view" class="view-grid hidden-view">
+        <div class="panel wide-panel">
+          <h3>3D latent sensory explorer</h3>
+          <div id="sensoryPlot" class="plot"></div>
+        </div>
+        <div class="panel">
+          <h3>Latent dimensions</h3>
+          <div id="latentDimensions"></div>
+        </div>
+      </section>
+
+      <section class="panel chat-panel">
+        <div class="chat-head">
+          <div>
+            <p class="eyebrow">Grounded generation</p>
+            <h3>AI Flavor Chemist</h3>
+          </div>
+          <div class="feedback-buttons">
+            <button data-score="1">+1</button>
+            <button data-score="-1">-1</button>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <input id="chatQuestion" value="Why should I add a pinch of salt to dark chocolate mousse?">
+          <button id="askButton">Ask</button>
+        </div>
+        <div id="chatAnswer" class="chat-answer"></div>
+        <ul id="citations" class="citation-list"></ul>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const state = { overview: null, network: null, sensory: null, lastQuestion: '' };
+
+    function renderOverview(data) {
+      state.overview = data;
+      document.getElementById('precision').textContent = data.precision_at_3;
+      document.getElementById('feedbackAvg').textContent = data.avg_feedback;
+      document.getElementById('ingredientCount').textContent = data.ingredient_count;
+      document.getElementById('moleculeCount').textContent = data.molecule_count;
+      const seed = document.getElementById('seed');
+      data.ingredients.forEach(name => seed.insertAdjacentHTML('beforeend', `<option>${name}</option>`));
+      const categories = ['All', 'Fruit', 'Vegetable', 'Herb', 'Dessert', 'Condiment', 'Pantry', 'Seasoning'];
+      categories.forEach(category => document.getElementById('category').insertAdjacentHTML('beforeend', `<option>${category}</option>`));
+      data.compatibility_levels.forEach(level => document.getElementById('compatibility').insertAdjacentHTML('beforeend', `<option>${level}</option>`));
+      const notes = document.getElementById('datasetNotes');
+      Object.entries(data.datasets).forEach(([key, note]) => notes.insertAdjacentHTML('beforeend', `<li><strong>${key}</strong>: ${note}</li>`));
+      seed.value = 'Strawberry';
+    }
+
+    function renderSubstitutions(data) {
+      document.getElementById('seedMeta').innerHTML = `
+        <strong>${data.seed.name}</strong>
+        <p>${data.seed.description}</p>
+        <p><em>Molecules:</em> ${data.seed.molecules.join(', ')}</p>`;
+      document.getElementById('substitutionCards').innerHTML = data.results.map(item => `
+        <article class="sub-card">
+          <div class="card-head"><h4>${item.ingredient}</h4><span>${item.similarity}</span></div>
+          <p>${item.description}</p>
+          <p><strong>${item.category}</strong> · ${item.cuisine} · ${item.compatibility}</p>
+          <p><em>Shared molecules:</em> ${item.shared_molecules.join(', ') || 'None'}</p>
+        </article>`).join('');
+      document.getElementById('indexPreview').textContent = JSON.stringify(data.inverted_index_preview, null, 2);
+    }
+
+    function renderNetwork(data) {
+      state.network = data;
+      const names = data.nodes.map(node => node.id);
+      const x = data.nodes.map((_, idx) => Math.cos((idx / data.nodes.length) * Math.PI * 2));
+      const y = data.nodes.map((_, idx) => Math.sin((idx / data.nodes.length) * Math.PI * 2));
+      const edgeTraces = data.edges.map(edge => {
+        const s = names.indexOf(edge.source); const t = names.indexOf(edge.target);
+        return {
+          x: [x[s], x[t]], y: [y[s], y[t]], mode: 'lines', type: 'scatter', hoverinfo: 'text',
+          text: `${edge.source} ↔ ${edge.target}<br>PMI: ${edge.pmi}<br>Molecules: ${edge.shared_molecules.join(', ')}`,
+          line: { width: Math.max(1, edge.shared_count * 1.6), color: 'rgba(125,211,252,0.45)' },
+          showlegend: false
+        };
+      });
+      const nodeTrace = {
+        x, y, mode: 'markers+text', type: 'scatter', text: names, textposition: 'top center',
+        marker: { size: data.nodes.map(n => 12 + n.degree), color: data.nodes.map(n => n.degree), colorscale: 'Viridis' },
+        hovertemplate: '%{text}<extra></extra>'
+      };
+      Plotly.newPlot('networkPlot', [...edgeTraces, nodeTrace], { paper_bgcolor: '#111827', plot_bgcolor: '#111827', font: { color: '#f3f4f6' }, xaxis: { visible: false }, yaxis: { visible: false } }, { responsive: true });
+    }
+
+    function renderSensory(data) {
+      state.sensory = data;
+      Plotly.newPlot('sensoryPlot', [{
+        x: data.points.map(p => p.x), y: data.points.map(p => p.y), z: data.points.map(p => p.z),
+        text: data.points.map(p => `${p.ingredient}<br>${p.molecules.join(', ')}`),
+        mode: 'markers', type: 'scatter3d', marker: { size: 8, color: data.points.map((_, i) => i), colorscale: 'Turbo' }
+      }], { paper_bgcolor: '#111827', scene: { bgcolor: '#111827', xaxis: { title: 'Axis 1' }, yaxis: { title: 'Axis 2' }, zaxis: { title: 'Axis 3' } }, font: { color: '#f3f4f6' } }, { responsive: true });
+      document.getElementById('latentDimensions').innerHTML = data.dimensions.map(dim => `<article class="latent-card"><h4>Dimension ${dim.dimension}: ${dim.label}</h4><p>${dim.top_molecules.join(', ')}</p></article>`).join('');
+    }
+
+    async function loadOverview() {
+      const res = await fetch('/api/overview');
+      renderOverview(await res.json());
+    }
+
+    async function loadSubstitutions() {
+      const params = new URLSearchParams({ seed: seed.value, category: category.value, compatibility: compatibility.value, exclude_allergen: allergen.value });
+      const res = await fetch(`/api/substitutions?${params.toString()}`);
+      renderSubstitutions(await res.json());
+    }
+
+    async function loadNetwork() {
+      const res = await fetch('/api/network');
+      renderNetwork(await res.json());
+    }
+
+    async function loadSensory() {
+      const res = await fetch('/api/sensory-map');
+      renderSensory(await res.json());
+    }
+
+    async function askQuestion() {
+      const question = document.getElementById('chatQuestion').value;
+      state.lastQuestion = question;
+      const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }) });
+      const data = await res.json();
+      document.getElementById('chatAnswer').textContent = data.answer;
+      document.getElementById('citations').innerHTML = data.citations.map(c => `<li><strong>${c.source}</strong> — ${c.title}<br>${c.snippet}</li>`).join('');
+    }
+
+    async function sendFeedback(score) {
+      const res = await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: state.lastQuestion || document.getElementById('chatQuestion').value, score }) });
+      const data = await res.json();
+      document.getElementById('feedbackAvg').textContent = data.average_feedback;
+    }
+
+    document.getElementById('refresh').addEventListener('click', loadSubstitutions);
+    document.getElementById('askButton').addEventListener('click', askQuestion);
+    document.querySelectorAll('.feedback-buttons button').forEach(btn => btn.addEventListener('click', () => sendFeedback(btn.dataset.score)));
+    document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.view-grid').forEach(view => view.classList.add('hidden-view'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.target).classList.remove('hidden-view');
+      document.getElementById(tab.dataset.target).classList.add('active-view');
+    }));
+
+    loadOverview().then(() => loadSubstitutions());
+    loadNetwork();
+    loadSensory();
+    askQuestion();
+  </script>
 </body>
+</html>
