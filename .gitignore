@@ -30,9 +30,5 @@ package-lock.json
 
 # FlavorMatrix data (large files – rebuild locally)
 data/raw/
-data/flavormatrix.duckdb
-data/artifacts/*.npz
-data/artifacts/*.npy
-data/artifacts/*.json
 !data/.gitkeep
 !data/artifacts/.gitkeep
