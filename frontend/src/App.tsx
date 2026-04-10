@@ -90,7 +90,7 @@ function App(): JSX.Element {
     <div className="bg-app">
       <header className="bg-header">
         <h1>Board Game Recommender</h1>
-        <p>TF-IDF baseline + SVD latent themes with explainable tags.</p>
+        <p>Find similar games using TF-IDF and latent SVD themes with clear explanations.</p>
       </header>
 
       <section className="bg-controls">
@@ -152,21 +152,39 @@ function App(): JSX.Element {
 
       <main className="bg-main">
         <section className="bg-results">
+          <div className="bg-section-head">
+            <h2>Recommendations</h2>
+            <span>{results.length} items</span>
+          </div>
+
+          {results.length === 0 && (
+            <div className="bg-empty">
+              Run a query or pick a title to get recommendations.
+            </div>
+          )}
+
           {results.map((r) => (
             <article key={r.id} className="bg-card">
               <div className="bg-card-head">
-                <h3>{r.name}</h3>
-                <span>{r.year_published || '—'}</span>
+                <div>
+                  <h3>{r.name}</h3>
+                  <div className="bg-subtle">Published: {r.year_published || '—'}</div>
+                </div>
+                <div className="bg-ranks">SVD #{r.rank_svd} · TF-IDF #{r.rank_tfidf}</div>
               </div>
 
               <p>{r.snippet || 'No description snippet available.'}</p>
+
+              <div className="bg-tags">
+                {r.category && <span className="tag muted">{r.category}</span>}
+                {r.mechanic && <span className="tag muted">{r.mechanic}</span>}
+              </div>
 
               <div className="bg-meta">
                 <span>Avg: {r.average_rating?.toFixed?.(2) ?? '—'}</span>
                 <span>Ratings: {r.users_rated}</span>
                 <span>SVD: {r.score_svd.toFixed(4)}</span>
                 <span>TF-IDF: {r.score_tfidf.toFixed(4)}</span>
-                <span>Ranks: SVD #{r.rank_svd} / TF-IDF #{r.rank_tfidf}</span>
               </div>
 
               <div className="bg-tags">
@@ -181,7 +199,10 @@ function App(): JSX.Element {
         </section>
 
         <aside className="bg-latent">
-          <h2>Latent Dimensions</h2>
+          <div className="bg-section-head">
+            <h2>Latent Dimensions</h2>
+            <span>Top 10</span>
+          </div>
           {latent.slice(0, 10).map((d) => (
             <div key={d.index} className="bg-latent-card">
               <strong>D{d.index + 1}: {d.label}</strong>
