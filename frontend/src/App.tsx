@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import { GameSuggestion, RecommendationResult, RecommendationResponse } from './types'
 
@@ -14,6 +14,7 @@ function App(): JSX.Element {
   const [latent, setLatent] = useState<RecommendationResponse['latent_dimensions']>([])
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('Choose a game title or enter a thematic query.')
+  const controlsRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -34,6 +35,18 @@ function App(): JSX.Element {
 
     return () => clearTimeout(timer)
   }, [query, seed])
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (!controlsRef.current?.contains(target)) {
+        setSuggestions([])
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [])
 
   const canSearch = useMemo(() => {
     if (seed) return true
@@ -86,6 +99,12 @@ function App(): JSX.Element {
     }
   }
 
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault()
+    setSuggestions([])
+    await runRecommendation()
+  }
+
   return (
     <div className="bg-app">
       <header className="bg-header">
@@ -93,7 +112,7 @@ function App(): JSX.Element {
         <p>Find similar games using TF-IDF and latent SVD themes with clear explanations.</p>
       </header>
 
-      <section className="bg-controls">
+      <section className="bg-controls" ref={controlsRef}>
         <div className="bg-input-wrap">
           <input
             value={query}
@@ -103,11 +122,35 @@ function App(): JSX.Element {
             }}
             placeholder="Search title or enter a query (e.g., strategic medieval war game with no dice)"
             autoComplete="off"
+            onFocus={() => {
+              if (!seed && query.trim().length > 1) {
+                void (async () => {
+                  try {
+                    const res = await fetch(`/api/games/search?q=${encodeURIComponent(query.trim())}`)
+                    const data: GameSuggestion[] = await res.json()
+                    setSuggestions(data)
+                  } catch {
+                    setSuggestions([])
+                  }
+                })()
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                setSuggestions([])
+                void runRecommendation()
+              }
+            }}
           />
           {suggestions.length > 0 && (
             <ul className="bg-suggestions">
               {suggestions.map((s) => (
-                <li key={s.id} onClick={() => selectSeed(s)}>
+                <li
+                  key={s.id}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => selectSeed(s)}
+                >
                   <span>{s.name}</span>
                   <small>{s.year_published || '—'} · {s.users_rated} ratings</small>
                 </li>
@@ -116,7 +159,7 @@ function App(): JSX.Element {
           )}
         </div>
 
-        <div className="bg-row">
+        <form className="bg-row" onSubmit={handleSubmit}>
           <label>
             Method
             <select value={method} onChange={(e) => setMethod(e.target.value as Method)}>
@@ -136,16 +179,20 @@ function App(): JSX.Element {
             />
           </label>
 
-          <button onClick={runRecommendation} disabled={!canSearch || loading}>
+          <button type="submit" disabled={!canSearch || loading}>
             {loading ? 'Searching...' : 'Recommend'}
           </button>
 
           {seed && (
-            <button className="secondary" onClick={clearSeed}>
+            <button
+              type="button"
+              className="secondary"
+              onClick={clearSeed}
+            >
               Clear title mode
             </button>
           )}
-        </div>
+        </form>
       </section>
 
       <p className="bg-message">{message}</p>
