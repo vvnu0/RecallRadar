@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
+import Landing from './Landing'
 import {
   GameSuggestion,
   QueryDimension,
@@ -72,13 +73,15 @@ function GameCard({ r }: { r: RecommendationResult }) {
                 rel="noreferrer"
               >{r.name}</a>
             </h3>
-            <div className="bg-subtle">Published: {r.year_published || '—'}</div>
+            <div className="bg-subtle">{r.year_published || '—'}</div>
           </div>
-          <div className="bg-ranks">SVD #{r.rank_svd} · TF-IDF #{r.rank_tfidf}</div>
+          <div className="bg-ranks">#{r.rank_svd} SVD · #{r.rank_tfidf} TF</div>
         </div>
       </div>
 
-      <p>{r.snippet || 'No description snippet available.'}</p>
+      <p className="bg-snippet">{r.snippet || 'No description available.'}</p>
+
+      <hr className="bg-divider" />
 
       <div className="bg-tags">
         {r.category && <span className="tag muted">{r.category}</span>}
@@ -86,24 +89,34 @@ function GameCard({ r }: { r: RecommendationResult }) {
       </div>
 
       <div className="bg-meta">
-        <span>Avg: {r.average_rating?.toFixed?.(2) ?? '—'}</span>
-        <span>Ratings: {r.users_rated}</span>
-        <span>SVD: {r.score_svd.toFixed(4)}</span>
-        <span>TF-IDF: {r.score_tfidf.toFixed(4)}</span>
+        {r.average_rating != null && (
+          <span className="bg-rating">★ {r.average_rating.toFixed(1)}</span>
+        )}
+        <span>{r.users_rated.toLocaleString()} rated</span>
+        <span>SVD {r.score_svd.toFixed(3)}</span>
+        <span>TF {r.score_tfidf.toFixed(3)}</span>
       </div>
 
-      <div className="bg-tags">
-        {r.why_tags.map((t) => (
-          <span key={`${r.id}-${t.index}`} className="tag">
-            Why: {t.label} ({t.activation})
-          </span>
-        ))}
-      </div>
+      {r.why_tags.length > 0 && (
+        <div className="bg-tags">
+          {r.why_tags.map((t) => (
+            <span key={`${r.id}-${t.index}`} className="tag why">{t.label}</span>
+          ))}
+        </div>
+      )}
     </article>
   )
 }
 
 function App(): JSX.Element {
+  // Landing phase: 'landing' → 'leaving' → 'app'
+  const [phase, setPhase] = useState<'landing' | 'leaving' | 'app'>('landing')
+
+  const handleEnter = () => {
+    setPhase('leaving')
+    setTimeout(() => setPhase('app'), 450)
+  }
+
   // Field 1: seed game search
   const [seedQuery, setSeedQuery] = useState('')
   const [suggestions, setSuggestions] = useState<GameSuggestion[]>([])
@@ -211,8 +224,12 @@ function App(): JSX.Element {
       ? <div className="bg-empty">No results.</div>
       : items.map((r) => <GameCard key={r.id} r={r} />)
 
+  if (phase !== 'app') {
+    return <Landing onEnter={handleEnter} leaving={phase === 'leaving'} />
+  }
+
   return (
-    <div className="bg-app">
+    <div className="bg-app bg-app--entered">
       <header className="bg-header">
         <h1>Board Game Recommender</h1>
         <p>Find similar games using TF-IDF and latent SVD themes with clear explanations.</p>

@@ -1,0 +1,231 @@
+/* ── Landing page ───────────────────────────────────── */
+@keyframes diceFloat {
+  0%   { transform: translateY(0px) rotate(0deg);   opacity: 0.07; }
+  50%  { transform: translateY(-22px) rotate(12deg); opacity: 0.13; }
+  100% { transform: translateY(0px) rotate(0deg);   opacity: 0.07; }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 4px 24px rgba(176, 148, 96, 0.28); }
+  50%       { box-shadow: 0 4px 40px rgba(176, 148, 96, 0.52); }
+}
+
+@keyframes landingExit {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes appEnter {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.landing {
+  position: fixed;
+  inset: 0;
+  background: #141210;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  z-index: 100;
+}
+
+.landing.leaving {
+  animation: landingExit 0.45s ease forwards;
+}
+
+/* ── Floating dice background ───────────────────────── */
+.landing-dice {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.landing-die {
+  position: absolute;
+  font-size: 3.2rem;
+  color: #c8b896;
+  opacity: 0.07;
+  animation: diceFloat linear infinite;
+  will-change: transform, opacity;
+}
+
+/* ── Content ────────────────────────────────────────── */
+.landing-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 0 28px;
+}
+
+.landing-eyebrow {
+  font-family: "Palatino Linotype", Palatino, "Book Antiqua", serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 3.5px;
+  color: #b09a78;
+  animation: fadeUp 0.6s ease 0.1s both;
+}
+
+.landing-title {
+  font-family: "Palatino Linotype", Palatino, "Book Antiqua", serif;
+  font-size: clamp(2.6rem, 6vw, 5rem);
+  font-weight: 400;
+  color: #f0ece3;
+  margin: 0;
+  line-height: 1.12;
+  letter-spacing: -0.5px;
+  animation: fadeUp 0.7s ease 0.25s both;
+}
+
+.landing-title em {
+  font-style: italic;
+  color: #d4b878;
+}
+
+.landing-subtitle {
+  font-family: "Palatino Linotype", Palatino, "Book Antiqua", serif;
+  font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+  color: #8a8070;
+  max-width: 50ch;
+  line-height: 1.65;
+  margin: 0;
+  animation: fadeUp 0.7s ease 0.4s both;
+}
+
+.landing-cta {
+  margin-top: 12px;
+  padding: 15px 40px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #8b7a59, #b09a78);
+  color: #fff;
+  font-family: "Palatino Linotype", Palatino, "Book Antiqua", serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  animation: fadeUp 0.7s ease 0.6s both, pulseGlow 2.8s ease 1.4s infinite;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.landing-cta:hover {
+  transform: translateY(-3px) scale(1.03);
+  filter: brightness(1.1);
+}
+
+.landing-cta:active {
+  transform: translateY(-1px) scale(1.01);
+}
+
+/* ── Decorative divider line ────────────────────────── */
+.landing-divider {
+  width: 48px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #8b7a59, transparent);
+  animation: fadeIn 0.6s ease 0.55s both;
+}
+
+/* ── Team section ───────────────────────────────────── */
+.landing-team {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  animation: fadeUp 0.7s ease 0.8s both;
+}
+
+.landing-team-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: #5a5044;
+}
+
+.landing-team-members {
+  display: flex;
+  gap: 48px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.landing-member {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.landing-member-avatar {
+  width: 192px;
+  height: 192px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid #3a3228;
+  background: linear-gradient(135deg, #2a2420, #3a3228);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s;
+}
+
+.landing-member-avatar:hover {
+  border-color: #8b7a59;
+}
+
+.landing-member-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.landing-member-avatar span {
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: #8b7a59;
+  letter-spacing: 1px;
+}
+
+.landing-member-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #c8bfb0;
+  margin: 0;
+}
+
+.landing-member-meta {
+  font-size: 0.85rem;
+  color: #8a8070;
+  margin: 0;
+}
+
+/* ── Footer hint ────────────────────────────────────── */
+.landing-hint {
+  position: absolute;
+  bottom: 32px;
+  font-size: 0.75rem;
+  color: #4a4438;
+  letter-spacing: 0.5px;
+  animation: fadeIn 1s ease 1.2s both;
+  font-family: "Palatino Linotype", Palatino, "Book Antiqua", serif;
+}
