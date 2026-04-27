@@ -1,4 +1,4 @@
-# FlavorMatrix — Board Game Recommender
+# Board Game Recommender
 
 A Flask + React app that suggests board games using classical IR and LLM-powered query enhancement, with transparent explanations of why each game was recommended.
 
